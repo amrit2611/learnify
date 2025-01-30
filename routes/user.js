@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { userModel } = require('../db')
+const { userModel, purchaseModel } = require('../db')
 const { userMiddleware } = require('../middleware/user')
 const userRouter = Router();
 const jwt = require('jsonwebtoken')
@@ -53,8 +53,22 @@ userRouter.post('/signin', async (req, res) => {
 })
 
 
-userRouter.get('/purchases', async (req, res) => {
-    res.json({ '': '' })
+userRouter.get('/purchases', userMiddleware, async (req, res) => {
+    const userId = req.userId;
+    try {
+        const purchases = await purchaseModel.find({
+            userId: userId
+        })
+        return res.status(200).json({
+            message: "successfully fetched your purchases",
+            purchases
+        })
+    } catch (err) {
+        return res.json({
+            message: "error fetching your purchases",
+            err: err.message
+        })
+    }
 })
 
 

@@ -62,7 +62,7 @@ adminRouter.post('/course', adminMiddleware, async (req, res) => {
     const adminId = req.adminId;
     const { title, description, price, imageUrl } = req.body;
     // instead of taking imageUrl, we need to take actual images and upload somewhere.
-    // there should be input validation here since we are creating new doc in db.
+    // input validation here
     try {
         const currentCourse = await courseModel.create({
             title: title,
@@ -90,8 +90,11 @@ adminRouter.put('/course', adminMiddleware, async (req, res) => {
     const adminId = req.adminId;
     const courseId = req.courseId;
     const { newTitle, newDescription, newPrice, newImageUrl } = req.body;
-
-    const currentCourse = await courseModel.findByIdAndUpdate(courseId, {
+    // input validation here 
+    const currentCourse = await courseModel.findOneAndUpdate({
+        _id: courseId,
+        creatorId: adminId,
+    }, {
         title: newTitle,
         description: newDescription,
         price: newPrice,
@@ -104,19 +107,21 @@ adminRouter.put('/course', adminMiddleware, async (req, res) => {
 })
 
 
-adminRouter.get('/course', async (req, res) => {
-    console.log("get-course route");
+adminRouter.get('/course/bulk', async (req, res) => {
+    console.log("get-course/bulk route");
     const adminId = req.adminId;
-    const courseId = req.courseId;
-    const currentCourse = await courseModel.findOne({
-        _id: courseId,
-        creatorId: adminId
-    })
-    if (currentCourse) { 
-        res.status(200).send(currentCourse)
-    } else { 
-        res.json({
-            message: "Course Unavailable",
+    try {
+        const courses = await courseModel.find({
+            creatorId: adminId
+        });
+        return res.status(200).json({
+            message: "successfully fetched courses for this admin",
+            courses: courses
+        })
+    } catch (err) {
+        return res.status(500).json({
+            message: "error fetching courses",
+            err: err.message
         })
     }
 })
