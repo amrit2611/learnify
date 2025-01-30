@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const { z } = require('zod')
 const bcrypt = require('bcrypt')
 
+
 const adminRouter = Router();
 require('dotenv').config();
 
@@ -13,17 +14,26 @@ adminRouter.post('/signup', async (req, res) => {
     // input validation here
     const { email, password, firstName, lastName } = req.body
     // bcrypt here
-    const newAdmin = await adminModel.create({
-        email: email,
-        password: password,
-        firstName: firstName,
-        lastName: lastName
-    })
-    res.status(200).json({
-        message: "Admin created!!",
-        adminId: newAdmin._id,
-    })
+    try {
+        const newAdmin = await adminModel.create({
+            email: email,
+            password: password,
+            firstName: firstName,
+            lastName: lastName
+        })
+        return res.status(200).json({
+            message: "Admin created!!",
+            adminId: newAdmin._id,
+        })
+    } catch (err) {
+        console.log(`error while creating new admin: ${err.message}`);
+        return res.status(500).json({
+            message: "error while creating new admin",
+            error: err.message
+        })
+    }
 })
+
 
 adminRouter.post('/signin', async (req, res) => {
     const { email, password } = req.body;
@@ -46,23 +56,34 @@ adminRouter.post('/signin', async (req, res) => {
     }
 })
 
+
 adminRouter.post('/course', adminMiddleware, async (req, res) => {
     console.log('post-course route');
     const adminId = req.adminId;
     const { title, description, price, imageUrl } = req.body;
     // instead of taking imageUrl, we need to take actual images and upload somewhere.
-    const currentCourse = await courseModel.create({
-        title: title,
-        description: description,
-        price: price,
-        imageUrl: imageUrl,
-        creatorId: adminId
-    })
-    res.status(200).json({
-        message: "Course Created",
-        courseId: currentCourse._id
-    })
+    // there should be input validation here since we are creating new doc in db.
+    try {
+        const currentCourse = await courseModel.create({
+            title: title,
+            description: description,
+            price: price,
+            imageUrl: imageUrl,
+            creatorId: adminId
+        })
+        return res.status(200).json({
+            message: "Course Created",
+            courseId: currentCourse._id
+        })
+    } catch (err) {
+        console.log(`error while creating course: ${err.message}`);
+        return res.status(500).json({
+            message: "error while creating new course",
+            error: err.message
+        })
+    }
 })
+
 
 adminRouter.put('/course', adminMiddleware, async (req, res) => {
     console.log('put-course route');
@@ -82,6 +103,7 @@ adminRouter.put('/course', adminMiddleware, async (req, res) => {
     })
 })
 
+
 adminRouter.get('/course', async (req, res) => {
     console.log("get-course route");
     const adminId = req.adminId;
@@ -98,5 +120,6 @@ adminRouter.get('/course', async (req, res) => {
         })
     }
 })
+
 
 module.exports = { adminRouter: adminRouter }
