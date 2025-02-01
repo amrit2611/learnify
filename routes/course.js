@@ -22,7 +22,7 @@ courseRouter.post('/purchase', userMiddleware, async (req,res) => {
 })
 
 
-courseRouter.get('/preview', async (req,res) => {
+courseRouter.get('/preview', async (req,res) => { 
     // does not need to be authenticated since all should see preview
     try {
         const courses = await courseModel.find({});
