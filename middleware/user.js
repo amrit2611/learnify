@@ -9,13 +9,11 @@ function userMiddleware(req, res, next) {
 
     if (decoded) {
         req.userId = decoded.id;
-        res.status(200).json({
-            message: 'User Authenticated'
-        })
+        console.log("user authenticated")
         next();
     } else {
-        res.status(403).json({
-            message: "You are not signed in"
+        return res.status(403).json({
+            message: "Sign in to continue"
         })
     }
 }
