@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { purchaseModel, courseModel } = require('../db')
+const { purchaseModel, courseModel, userModel } = require('../db')
 const { userMiddleware } = require('../middleware/user')
 const courseRouter = Router();
 
@@ -11,13 +11,23 @@ courseRouter.post('/purchase', userMiddleware, async (req,res) => {
     try { 
         const newPurchase = await purchaseModel.create({
             userId, courseId
+        });
+        await userModel.updateOne({
+            _id: userId
+        }, {
+            '$push': {
+                purchasesCourses: courseId,
+            } 
         })
         return res.status(200).json({
             message: "purchase successful",
             purchaseId: newPurchase._id
         })
     } catch (err) {
-
+        return res.status(500).json({
+            message: "error while purchasing course",
+            error: err.message
+        })
     }
 })
 
@@ -33,7 +43,7 @@ courseRouter.get('/preview', async (req,res) => {
     } catch (err) {
         return res.status(500).json({
             message: "error while fetching courses",
-            err: err.message
+            error: err.message
         })
     }
 })

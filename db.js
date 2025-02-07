@@ -5,16 +5,34 @@ require('dotenv').config();
 
 
 const userSchema = new Schema({
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
+    email: { 
+        type: String, 
+        unique: true, 
+        required: true 
+    },
+    password: { 
+        type: String, 
+        required: true 
+    },
     firstName: String,
     lastName: String,
+    purchasesCourses: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'course'
+    }]
 })
 
 
 const adminSchema = new Schema({
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
+    email: { 
+        type: String, 
+        unique: true, 
+        required: true 
+    },
+    password: { 
+        type: String, 
+        required: true 
+    },
     firstName: String,
     lastName: String,
 })
@@ -25,17 +43,27 @@ const courseSchema = new Schema({
     description: String,
     price: Number,
     imageUrl: String,
-    creatorId: mongoose.Schema.Types.ObjectId,
+    creatorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'admin'
+    }
 })
 
 
 const purchaseSchema = new Schema({
-    userId: mongoose.Schema.Types.ObjectId,
-    courseId: mongoose.Schema.Types.ObjectId,
+    userId: { 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user' 
+    },
+    courseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'course'
+    }
 })
 
 
 // should also have a model for course content for each and every course.
+
 
 const userModel = mongoose.model('user', userSchema)
 const adminModel = mongoose.model('admin', adminSchema)
