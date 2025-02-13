@@ -3,6 +3,7 @@ const { userModel, purchaseModel, courseModel } = require('../db')
 const { userMiddleware } = require('../middleware/user')
 const userRouter = Router();
 const jwt = require('jsonwebtoken')
+const bcrpt = require('bcrypt')
 const { z } = require('zod')
 
 
@@ -11,25 +12,43 @@ const JWT_USERSECRET = process.env.JWT_USERSECRET
 
 
 userRouter.post('/signup', async (req, res) => {
-    // input validation here
-    const { email, password, firstName, lastName } = req.body;
-    // bcrypt goes here
-    try {
-        const newUser = await userModel.create({
-            email: email,
-            password: password,
-            firstName: firstName,
-            lastName: lastName,
-        })
-        return res.status(200).json({
-            message: "User Created !!",
-            userId: newUser._id,
-        })
-    } catch (err) {
-        return res.status(500).json({
-            message: "error while creating new user",
-            error: err.message
-        })
+    const requiredBody = z.object({
+        email: z.string().min(3).max(100).email(),
+        password: z.string().min(6).max(100),
+        firstName: z.string().min(3).max(100),
+        lastName: z.string().min(3).max(100)
+    })
+    const parsedDataWithSuccess = requiredBody.partial().safeParse(req.body);
+    console.log(parsedDataWithSuccess)
+    if (!parsedDataWithSuccess) {
+        return res.json({
+            message: "incorrect format",
+            error: parsedDataWithSuccess.error
+        });
+    } else {
+        try {
+        const email = req.body.email;
+        const password = req.body.password;
+        const firstName = req.body.firstName;
+        const lastName = req.body.lastName;
+        const hashedPassword = await bcrpt.hash(password, 15)
+            const newUser = await userModel.create({
+                email: email,
+                password: hashedPassword,
+                firstName: firstName,
+                lastName: lastName,
+            })
+            console.log(`user created: ${newUser._id}`)
+            return res.status(200).json({
+                message: "User Created !!",
+                userId: newUser._id,
+            })
+        } catch (err) {
+            return res.status(500).json({
+                message: "error while creating new user",
+                error: err.message
+            })
+        }
     }
 })
 
@@ -40,7 +59,7 @@ userRouter.post('/signin', async (req, res) => {
     try {
         const user = await userModel.findOne({
             email: email,
-            password: password,
+            password: password,  // hashed password logic here
         })
         if (user) {
             // have to add cookie login here
