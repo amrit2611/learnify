@@ -27,11 +27,19 @@ userRouter.post('/signup', async (req, res) => {
         });
     } else {
         try {
-        const email = req.body.email;
-        const password = req.body.password;
-        const firstName = req.body.firstName;
-        const lastName = req.body.lastName;
-        const hashedPassword = await bcrpt.hash(password, 15)
+            const email = req.body.email;
+            const alreadyUser = await userModel.findOne({
+                email: email
+            })
+            if (alreadyUser) {
+                return res.status(422).json({
+                    message: "user already exists, proceed to login"
+                })
+            }
+            const password = req.body.password;
+            const firstName = req.body.firstName;
+            const lastName = req.body.lastName;
+            const hashedPassword = await bcrpt.hash(password, 15)
             const newUser = await userModel.create({
                 email: email,
                 password: hashedPassword,
@@ -53,9 +61,13 @@ userRouter.post('/signup', async (req, res) => {
 })
 
 
-// have to also implement validation using zod and hashing, salting using bcrypt.
 userRouter.post('/signin', async (req, res) => {
     const { email, password } = req.body
+    if (!email || !password){
+        return res.status(400).json({
+            message: "both email and password are required",
+        })
+    }
     try {
         const user = await userModel.findOne({
             email: email,
