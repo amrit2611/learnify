@@ -7,30 +7,54 @@ const bcrypt = require('bcrypt')
 
 
 const adminRouter = Router();
+const adminVerifiedRouter = Router();
 require('dotenv').config();
 
 
 adminRouter.post('/signup', async (req, res) => {
-    // input validation here
-    const { email, password, firstName, lastName } = req.body
-    // bcrypt here
-    try {
-        const newAdmin = await adminModel.create({
-            email: email,
-            password: password,
-            firstName: firstName,
-            lastName: lastName
-        })
-        return res.status(200).json({
-            message: "Admin created!!",
-            adminId: newAdmin._id,
-        })
-    } catch (err) {
-        console.log(`error while creating new admin: ${err.message}`);
-        return res.status(500).json({
-            message: "error while creating new admin",
-            error: err.message
-        })
+    const requiredBody = z.object({
+        email: z.string().min(3).max(100).email(),
+        password: z.string().min(6).max(100),
+        firstName: z.string().min(3).max(100),
+        lastName: z.string().min(3).max(100)
+    })
+    const parsedDataWithSuccess = requiredBody.partial().safeParse(req.body);
+    console.log(parsedDataWithSuccess)
+    if (!parsedDataWithSuccess) {
+        return res.json({
+            message: "incorrect format",
+            error: parsedDataWithSuccess.error
+        });
+    } else {
+        try {
+            const { email, password, firstName, lastName } = req.body
+            const alreadyAdmin = await adminModel.findOne({
+                email: email
+            })
+            if (alreadyAdmin) {
+                return res.status(422).json({
+                    message: "admin already exists, proceed to login"
+                })
+            }
+            const hashedPassword = await bcrypt.hash(password, 11)
+            const newAdmin = await adminModel.create({
+                email: email,
+                password: hashedPassword,
+                firstName: firstName,
+                lastName: lastName
+            })
+            console.log(`admin created: ${newAdmin._id}`)
+            return res.status(200).json({
+                message: "Admin created!!",
+                adminId: newAdmin._id,
+            })
+        } catch (err) {
+            console.log(`error while creating new admin: ${err.message}`);
+            return res.status(500).json({
+                message: "error while creating new admin",
+                error: err.message
+            })
+        }
     }
 })
 
@@ -57,7 +81,7 @@ adminRouter.post('/signin', async (req, res) => {
 })
 
 
-adminRouter.post('/course', adminMiddleware, async (req, res) => {
+adminVerifiedRouter.post('/course', async (req, res) => {
     console.log('post-course route');
     const adminId = req.adminId;
     const { title, description, price, imageUrl } = req.body;
@@ -85,7 +109,7 @@ adminRouter.post('/course', adminMiddleware, async (req, res) => {
 })
 
 
-adminRouter.put('/course', adminMiddleware, async (req, res) => {
+adminVerifiedRouter.put('/course', async (req, res) => {
     console.log('put-course route');
     const adminId = req.adminId;
     const courseId = req.courseId;
@@ -127,4 +151,7 @@ adminRouter.get('/course/bulk', async (req, res) => {
 })
 
 
-module.exports = { adminRouter: adminRouter }
+module.exports = {
+    adminRouter: adminRouter,
+    adminVerifiedRouter: adminVerifiedRouter
+}

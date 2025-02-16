@@ -39,7 +39,7 @@ userRouter.post('/signup', async (req, res) => {
             const password = req.body.password;
             const firstName = req.body.firstName;
             const lastName = req.body.lastName;
-            const hashedPassword = await bcrpt.hash(password, 15)
+            const hashedPassword = await bcrpt.hash(password, 11)
             const newUser = await userModel.create({
                 email: email,
                 password: hashedPassword,
