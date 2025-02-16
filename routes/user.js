@@ -1,14 +1,14 @@
-const { Router } = require('express')
 const { userModel, purchaseModel, courseModel } = require('../db')
-const { userMiddleware } = require('../middleware/user')
-const userRouter = Router();
+const { Router } = require('express')
 const jwt = require('jsonwebtoken')
 const bcrpt = require('bcrypt')
 const { z } = require('zod')
 
 
+const userRouter = Router();
+const userVerifiedRouter = Router();
 require('dotenv').config();
-const JWT_USERSECRET = process.env.JWT_USERSECRET
+const ACCESS = process.env.JWT_USERSECRET
 
 
 userRouter.post('/signup', async (req, res) => {
@@ -39,7 +39,7 @@ userRouter.post('/signup', async (req, res) => {
             const password = req.body.password;
             const firstName = req.body.firstName;
             const lastName = req.body.lastName;
-            const hashedPassword = await bcrpt.hash(password, 15)
+            const hashedPassword = await bcrpt.hash(password, 11)
             const newUser = await userModel.create({
                 email: email,
                 password: hashedPassword,
@@ -63,7 +63,7 @@ userRouter.post('/signup', async (req, res) => {
 
 userRouter.post('/signin', async (req, res) => {
     const { email, password } = req.body
-    if (!email || !password){
+    if (!email || !password) {
         return res.status(400).json({
             message: "both email and password are required",
         })
@@ -71,21 +71,34 @@ userRouter.post('/signin', async (req, res) => {
     try {
         const user = await userModel.findOne({
             email: email,
-            password: password,  // hashed password logic here
         })
-        if (user) {
-            // have to add cookie login here
+        if (!user) {
+            return res.status(403).json({
+                message: "invalid credentials"
+            })
+        }
+        const passwordMatched = bcrypt.compare(password, user.password);
+        if (passwordMatched) {
+            console.log(`password matched: ${user.password}`)
             const token = jwt.sign({
                 id: user._id
-            }, JWT_USERSECRET);
+            }, ACCESS, {
+                expiresIn: '30m'
+            });
+            res.cookie('access', token, {
+                httpOnly: true,
+                sameSite: 'Strict',
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 30 * 60 * 1000,
+                path: '/'
+            });
             return res.status(200).json({
-                message: "User found",
-                token: token
+                message: "successfully signed in"
             })
         } else {
             return res.status(403).json({
-                message: "Invalid Credentials",
-            })
+                message: "invalid credentials"
+            });
         }
     } catch (err) {
         return res.status(500).json({
@@ -97,7 +110,7 @@ userRouter.post('/signin', async (req, res) => {
 
 
 // return purchased courses for this user
-userRouter.get('/courses', userMiddleware, async (req, res) => {
+userVerifiedRouter.get('/courses', async (req, res) => {
     const userId = req.userId;
     try {
         const user = await userModel.findOne({
@@ -120,5 +133,11 @@ userRouter.get('/courses', userMiddleware, async (req, res) => {
     }
 })
 
+userVerifiedRouter.post('/logout', async (req, res) => {
+    const userId = req.userId;
+})
 
-module.exports = { userRouter: userRouter }
+module.exports = {
+    userRouter: userRouter,
+    userVerifiedRouter: userVerifiedRouter,
+}
