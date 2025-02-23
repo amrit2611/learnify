@@ -3,12 +3,13 @@ const { adminModel, courseModel } = require('../db')
 const { adminMiddleware } = require('../middleware/admin')
 const jwt = require('jsonwebtoken')
 const { z } = require('zod')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
 
 
 const adminRouter = Router();
 const adminVerifiedRouter = Router();
 require('dotenv').config();
+const ADMIN_ACCESS = process.env.JWT_ADMINSECRET
 
 
 adminRouter.post('/signup', async (req, res) => {
@@ -61,21 +62,47 @@ adminRouter.post('/signup', async (req, res) => {
 
 adminRouter.post('/signin', async (req, res) => {
     const { email, password } = req.body;
-    const currentAdmin = await adminModel.findOne({
-        email: email,
-        password: password,
-    })
-    if (currentAdmin) {
-        const token = jwt.sign({
-            id: currentAdmin._id,
-        }, process.env.JWT_ADMINSECRET)
-        res.status(200).json({
-            message: "Admin found",
-            token: token
-        });
-    } else {
-        res.status(403).json({
-            message: "Invalid Credentials"
+    if (!email || !password) {
+        return res.status(400).json({
+            message: "email or password is missing"
+        })
+    }
+    try {
+        const admin = await adminModel.findOne({
+            email: email,
+        })
+        if(!admin) {
+            return res.status(403).json({
+                message: "invalid credentials"
+            })
+        }
+        const passwordMatched = bcrypt.compare(password, admin.password);
+        if (passwordMatched) {
+            console.log(`password matched: ${admin.password}`)
+            const token = jwt.sign({
+                id: admin._id
+            }, ADMIN_ACCESS, {
+                expiresIn: '1h'
+            });
+            res.cookie('admin_access', token, {
+                httpOnly: true,
+                sameSite: 'Strict',
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 30 * 60 * 1000,
+                path: '/'
+            });
+            return res.status(200).json({
+                message: "successfully signed in"
+            })
+        } else {
+            return res.status(403).json({
+                error: "invalid credentials"
+            });
+        }
+    } catch (err) {
+        return res.status(500).json({
+            message: "error while signing in",
+            error: err.message
         })
     }
 })
