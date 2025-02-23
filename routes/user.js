@@ -1,7 +1,7 @@
 const { userModel, purchaseModel, courseModel } = require('../db')
 const { Router } = require('express')
 const jwt = require('jsonwebtoken')
-const bcrpt = require('bcrypt')
+const bcrypt = require('bcrypt')
 const { z } = require('zod')
 
 
@@ -39,7 +39,7 @@ userRouter.post('/signup', async (req, res) => {
             const password = req.body.password;
             const firstName = req.body.firstName;
             const lastName = req.body.lastName;
-            const hashedPassword = await bcrpt.hash(password, 11)
+            const hashedPassword = await bcrypt.hash(password, 11)
             const newUser = await userModel.create({
                 email: email,
                 password: hashedPassword,

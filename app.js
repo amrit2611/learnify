@@ -10,10 +10,15 @@ require('dotenv').config();
 const app = express();
 app.use(express.json())
 
+// user routes 
 app.use('/user', userRouter);
 app.use('/api/v1/user', userMiddleware, userVerifiedRouter);
+
+// admin routes
 app.use('/admin', adminRouter);
 app.use('/api/v1/admin', adminMiddleware, adminVerifiedRouter);
+
+// course routes
 app.use('/api/v1/course', courseRouter);
 
 async function main() {
