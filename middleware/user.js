@@ -9,16 +9,24 @@ function userMiddleware(req, res, next) {
         return res.status(403).json({
             message: "sign in to continue"
         })
-    }
-    const decoded = jwt.verify(token, JWT_USERSECRET);
-    if (decoded) {
-        req.userId = decoded.id;
-        console.log("user authenticated")
-        next();
     } else {
-        return res.status(403).json({
-            message: "Sign in to continue"
-        })
+        try {
+            const decoded = jwt.verify(token, JWT_USERSECRET);
+            if (decoded) {
+                req.userId = decoded.id;
+                console.log("user authenticated")
+                next();
+            } else {
+                return res.status(403).json({
+                    message: "Sign in to continue"
+                })
+            }
+        } catch (err) {
+            return res.status(500).json({
+                message: "error while authenticating",
+                error: err.message
+            })
+        }
     }
 }
 

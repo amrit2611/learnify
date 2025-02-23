@@ -22,7 +22,7 @@ app.use('/api/v1/admin', adminMiddleware, adminVerifiedRouter);
 
 // course routes
 app.use('/api/v1/course', courseRouter);
-
+    
 async function main() {
     try {
         await mongoose.connect(process.env.MONGO_URL);
