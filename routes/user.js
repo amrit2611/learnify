@@ -133,9 +133,19 @@ userVerifiedRouter.get('/courses', async (req, res) => {
     }
 })
 
-userVerifiedRouter.post('/logout', async (req, res) => {
-    const userId = req.userId;
-})
+userVerifiedRouter.post('/logout', async (req, res) => { 
+    try {
+        res.clearCookie('access');
+        return res.status(200).json({
+            message: "logged out successfully"
+        })
+    } catch (err) {
+        return res.status(500).json({
+            message: "error while logging out",
+            error: err.message
+        })
+    }
+});
 
 module.exports = {
     userRouter: userRouter,

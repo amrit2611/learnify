@@ -1,14 +1,16 @@
-const express = require('express')
-const mongoose = require('mongoose')
-const { userRouter, userVerifiedRouter } = require('./routes/user.js')
-const { courseRouter } = require('./routes/course.js')
-const { adminRouter, adminVerifiedRouter } = require('./routes/admin.js')
+const express = require('express');
+const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser')
+const { courseRouter } = require('./routes/course.js');
 const { userMiddleware } = require('./middleware/user.js')
 const { adminMiddleware } = require('./middleware/admin.js')
+const { userRouter, userVerifiedRouter } = require('./routes/user.js')
+const { adminRouter, adminVerifiedRouter } = require('./routes/admin.js')
 
-require('dotenv').config();
 const app = express();
-app.use(express.json())
+app.use(express.json());
+app.use(cookieParser());
+require('dotenv').config();
 
 // user routes 
 app.use('/user', userRouter);
