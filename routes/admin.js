@@ -71,7 +71,7 @@ adminRouter.post('/signin', async (req, res) => {
         const admin = await adminModel.findOne({
             email: email,
         })
-        if(!admin) {
+        if (!admin) {
             return res.status(403).json({
                 message: "invalid credentials"
             })
@@ -155,6 +155,21 @@ adminVerifiedRouter.put('/course', async (req, res) => {
         message: "Course updated",
         courseId: currentCourse._id
     })
+})
+
+
+adminVerifiedRouter.post('/logout', async (req, res) => {
+    try {
+        res.clearCookie('admin_access');
+        return res.status(200).json({
+            message: "logged out successfully"
+        })
+    } catch (err) {
+        return res.status(500).json({
+            message: "error while logging out",
+            error: err.message
+        })
+    }
 })
 
 
