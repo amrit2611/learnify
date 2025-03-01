@@ -140,21 +140,28 @@ adminVerifiedRouter.put('/course', async (req, res) => {
     console.log('put-course route');
     const adminId = req.adminId;
     const courseId = req.courseId;
-    const { newTitle, newDescription, newPrice, newImageUrl } = req.body;
-    // input validation here 
-    const currentCourse = await courseModel.findOneAndUpdate({
-        _id: courseId,
-        creatorId: adminId,
-    }, {
-        title: newTitle,
-        description: newDescription,
-        price: newPrice,
-        imageUrl: newImageUrl
-    }, { new: true })
-    res.status(200).json({
-        message: "Course updated",
-        courseId: currentCourse._id
-    })
+    try {
+        const { newTitle, newDescription, newPrice, newImageUrl } = req.body;
+        // input validation here 
+        const currentCourse = await courseModel.findOneAndUpdate({
+            _id: courseId,
+            creatorId: adminId,
+        }, {
+            title: newTitle,
+            description: newDescription,
+            price: newPrice,
+            imageUrl: newImageUrl
+        }, { new: true })
+        res.status(200).json({
+            message: "Course updated",
+            courseId: currentCourse._id
+        })
+    } catch (err) {
+        return res.status(500).json({
+            message: "error while editing course",
+            error: err.message
+        })
+    }
 })
 
 
