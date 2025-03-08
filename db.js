@@ -17,7 +17,7 @@ const userSchema = new Schema({
         unique: true,
         required: true
     },
-    purchasesCourses: [{
+    purchasedCourses: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'course'
     }],
@@ -84,6 +84,10 @@ const purchaseSchema = new Schema({
     courseId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'course'
+    },
+    purchasedAt: {
+        type: Date,
+        default: Date.now(),
     }
 })
 
