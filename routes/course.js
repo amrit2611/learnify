@@ -4,9 +4,20 @@ const { userMiddleware } = require('../middleware/user')
 const courseRouter = Router();
 
 
+// purchase courses
 courseRouter.post('/purchase', userMiddleware, async (req,res) => {
     const userId = req.userId;
+    if (!userId || userId === undefined || userId === null) {
+        return res.status(401).json({
+            message: "you need to sign in to continue"
+        })
+    }
     const courseId = req.body.courseId;
+    if (!courseId || courseId === undefined || courseId === null) {
+        return res.status(400).json({
+            message: "select a course to proceed"
+        })
+    }
     // here we should check if user has paid the price
     try { 
         const newPurchase = await purchaseModel.create({
@@ -20,8 +31,7 @@ courseRouter.post('/purchase', userMiddleware, async (req,res) => {
             } 
         })
         return res.status(200).json({
-            message: "purchase successful",
-            purchaseId: newPurchase._id
+            message: "purchase successful"
         })
     } catch (err) {
         return res.status(500).json({
@@ -37,7 +47,7 @@ courseRouter.get('/preview', async (req,res) => {
     try {
         const courses = await courseModel.find({});
         return res.status(200).json({
-            message: "fetched all courses",
+            message: "fetched all available courses",
             courses
         })
     } catch (err) {

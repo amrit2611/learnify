@@ -15,11 +15,9 @@ userRouter.post('/signup', async (req, res) => {
     const requiredBody = z.object({
         email: z.string().min(3).max(100).email(),
         password: z.string().min(6).max(100),
-        firstName: z.string().min(3).max(100),
-        lastName: z.string().min(3).max(100)
+        username: z.string().min(3).max(100)
     })
-    const parsedDataWithSuccess = requiredBody.partial().safeParse(req.body);
-    console.log(parsedDataWithSuccess)
+    const parsedDataWithSuccess = requiredBody.safeParse(req.body);
     if (!parsedDataWithSuccess) {
         return res.json({
             message: "incorrect format",
@@ -28,28 +26,29 @@ userRouter.post('/signup', async (req, res) => {
     } else {
         try {
             const email = req.body.email;
+            const username = req.body.email;
+
             const alreadyUser = await userModel.findOne({
-                email: email
-            })
+                $or: [
+                    { email: email },
+                    { username: username }
+                ]
+            });
             if (alreadyUser) {
                 return res.status(422).json({
                     message: "user already exists, proceed to login"
                 })
             }
+
             const password = req.body.password;
-            const firstName = req.body.firstName;
-            const lastName = req.body.lastName;
             const hashedPassword = await bcrypt.hash(password, 11)
-            const newUser = await userModel.create({
+            await userModel.create({
                 email: email,
                 password: hashedPassword,
-                firstName: firstName,
-                lastName: lastName,
+                username: username
             })
-            console.log(`user created: ${newUser._id}`)
             return res.status(200).json({
-                message: "User Created !!",
-                userId: newUser._id,
+                message: "user created, proceed to login",
             })
         } catch (err) {
             return res.status(500).json({
@@ -65,7 +64,7 @@ userRouter.post('/signin', async (req, res) => {
     const { email, password } = req.body
     if (!email || !password) {
         return res.status(400).json({
-            message: "both email and password are required",
+            error: "both email and password are required to sign you in",
         })
     }
     try {
@@ -74,12 +73,15 @@ userRouter.post('/signin', async (req, res) => {
         })
         if (!user) {
             return res.status(403).json({
-                message: "invalid credentials"
+                error: "you need to have an account to continue"
             })
         }
         const passwordMatched = bcrypt.compare(password, user.password);
-        if (passwordMatched) {
-            console.log(`password matched: ${user.password}`)
+        if (!passwordMatched) {
+            return res.status(403).json({
+                message: "provide valid credentials to continue"
+            });
+        } else {
             const token = jwt.sign({
                 id: user._id
             }, ACCESS, {
@@ -93,12 +95,8 @@ userRouter.post('/signin', async (req, res) => {
                 path: '/'
             });
             return res.status(200).json({
-                message: "successfully signed in"
+                message: "welcome to Learnify"
             })
-        } else {
-            return res.status(403).json({
-                message: "invalid credentials"
-            });
         }
     } catch (err) {
         return res.status(500).json({
@@ -109,20 +107,25 @@ userRouter.post('/signin', async (req, res) => {
 })
 
 
-// return purchased courses for this user
+// return all purchased courses for this user
 userVerifiedRouter.get('/courses', async (req, res) => {
     const userId = req.userId;
+    if (!userId || userId === undefined || userId === null) {
+        return res.status(401).json({
+            message: "you need to sign in to continue"
+        })
+    }
     try {
         const user = await userModel.findOne({
             _id: userId
         })
         const courses = await courseModel.find({
             _id: {
-                '$in': user.purchasesCourses
+                '$in': user.purchasedCourses
             }
         })
         return res.status(200).json({
-            message: "successfully fetched your purchased courses",
+            message: "here are your purchased courses",
             courses
         })
     } catch (err) {
@@ -133,7 +136,13 @@ userVerifiedRouter.get('/courses', async (req, res) => {
     }
 })
 
-userVerifiedRouter.post('/logout', async (req, res) => { 
+userVerifiedRouter.post('/logout', async (req, res) => {
+    const userId = req.userId;
+    if (!userId || userId === undefined || userId === null) {
+        return res.status(401).json({
+            message: "you need to sign in to continue"
+        })
+    }
     try {
         res.clearCookie('access');
         return res.status(200).json({
@@ -146,6 +155,7 @@ userVerifiedRouter.post('/logout', async (req, res) => {
         })
     }
 });
+
 
 module.exports = {
     userRouter: userRouter,

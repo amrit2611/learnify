@@ -1,65 +1,103 @@
 const { Schema } = require('mongoose')
 const mongoose = require('mongoose');
-require('dotenv').config();
 
 
 const userSchema = new Schema({
-    email: { 
-        type: String, 
-        unique: true, 
-        required: true 
+    email: {
+        type: String,
+        unique: true,
+        required: true
     },
-    password: { 
-        type: String, 
-        required: true 
+    password: {
+        type: String,
+        required: true
     },
-    firstName: String,
-    lastName: String,
-    purchasesCourses: [{
+    username: {
+        type: String,
+        unique: true,
+        required: true
+    },
+    purchasedCourses: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'course'
-    }]
+    }],
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 })
 
 
 const adminSchema = new Schema({
-    email: { 
-        type: String, 
-        unique: true, 
-        required: true 
+    email: {
+        type: String,
+        unique: true,
+        required: true
     },
-    password: { 
-        type: String, 
-        required: true 
+    password: {
+        type: String,
+        required: true
     },
-    firstName: String,
-    lastName: String,
+    username: {
+        type: String,
+        required: true
+    },
+    createdCourses: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'course'
+    }],
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 })
 
 
 const courseSchema = new Schema({
     title: {
         type: String,
-        unique: true
+        unique: true,
+        required: true
     },
-    description: String,
-    price: Number,
-    imageUrl: String,
+    description: {
+        type: String,
+        unique: true,
+        required: true
+    },
+    price: {
+        type: Number,
+        required: true
+    },
+    imageUrl: {
+        type: String
+    },
     creatorId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'admin'
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+    lastUpdated: {
+        type: Date,
+        default: Date.now,
     }
 })
 
 
 const purchaseSchema = new Schema({
-    userId: { 
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user' 
+        ref: 'user'
     },
     courseId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'course'
+    },
+    purchasedAt: {
+        type: Date,
+        default: Date.now,
     }
 })
 
