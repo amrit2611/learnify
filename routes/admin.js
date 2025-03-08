@@ -16,10 +16,9 @@ adminRouter.post('/signup', async (req, res) => {
     const requiredBody = z.object({
         email: z.string().min(3).max(100).email(),
         password: z.string().min(6).max(100),
-        firstName: z.string().min(3).max(100),
-        lastName: z.string().min(3).max(100)
+        username: z.string().min(3).max(100)
     })
-    const parsedDataWithSuccess = requiredBody.partial().safeParse(req.body);
+    const parsedDataWithSuccess = requiredBody.safeParse(req.body);
     console.log(parsedDataWithSuccess)
     if (!parsedDataWithSuccess) {
         return res.json({
@@ -28,9 +27,12 @@ adminRouter.post('/signup', async (req, res) => {
         });
     } else {
         try {
-            const { email, password, firstName, lastName } = req.body
+            const { email, password, username } = req.body;
             const alreadyAdmin = await adminModel.findOne({
-                email: email
+                $or: [
+                    { email: email },
+                    { username: username }
+                ]
             })
             if (alreadyAdmin) {
                 return res.status(422).json({
@@ -38,19 +40,15 @@ adminRouter.post('/signup', async (req, res) => {
                 })
             }
             const hashedPassword = await bcrypt.hash(password, 11)
-            const newAdmin = await adminModel.create({
+            await adminModel.create({
                 email: email,
                 password: hashedPassword,
-                firstName: firstName,
-                lastName: lastName
+                username: username
             })
-            console.log(`admin created: ${newAdmin._id}`)
             return res.status(200).json({
-                message: "Admin created!!",
-                adminId: newAdmin._id,
+                message: "admin created, proceed to login",
             })
         } catch (err) {
-            console.log(`error while creating new admin: ${err.message}`);
             return res.status(500).json({
                 message: "error while creating new admin",
                 error: err.message
@@ -64,7 +62,7 @@ adminRouter.post('/signin', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({
-            message: "email or password is missing"
+            error: "both email and password are required to sign you in"
         })
     }
     try {
@@ -73,12 +71,15 @@ adminRouter.post('/signin', async (req, res) => {
         })
         if (!admin) {
             return res.status(403).json({
-                message: "invalid credentials"
+                error: "create an account to continue"
             })
         }
         const passwordMatched = bcrypt.compare(password, admin.password);
-        if (passwordMatched) {
-            console.log(`password matched: ${admin.password}`)
+        if (!passwordMatched) {
+            return res.status(403).json({
+                error: "provide valid credentials to continue"
+            });
+        } else {
             const token = jwt.sign({
                 id: admin._id
             }, ADMIN_ACCESS, {
@@ -92,25 +93,26 @@ adminRouter.post('/signin', async (req, res) => {
                 path: '/'
             });
             return res.status(200).json({
-                message: "successfully signed in"
+                message: "welcome to your Learnify!"
             })
-        } else {
-            return res.status(403).json({
-                error: "invalid credentials"
-            });
         }
     } catch (err) {
         return res.status(500).json({
-            message: "error while signing in",
+            message: "error while signing you in",
             error: err.message
         })
     }
 })
 
 
+// create course route
 adminVerifiedRouter.post('/course', async (req, res) => {
-    console.log('post-course route');
     const adminId = req.adminId;
+    if (!adminId || adminId === undefined || adminId === null) {
+        return res.status(401).json({
+            error: "you need to sign in to continue"
+        })
+    }
     const { title, description, price, imageUrl } = req.body;
     // instead of taking imageUrl, we need to take actual images and upload somewhere.
     // input validation here
@@ -124,10 +126,8 @@ adminVerifiedRouter.post('/course', async (req, res) => {
         })
         return res.status(200).json({
             message: "Course Created",
-            courseId: currentCourse._id
         })
     } catch (err) {
-        console.log(`error while creating course: ${err.message}`);
         return res.status(500).json({
             message: "error while creating new course",
             error: err.message
@@ -136,10 +136,20 @@ adminVerifiedRouter.post('/course', async (req, res) => {
 })
 
 
+// updating existing course
 adminVerifiedRouter.put('/course', async (req, res) => {
-    console.log('put-course route');
     const adminId = req.adminId;
+    if (!adminId || adminId === undefined || adminId === null) {
+        return res.status(401).json({
+            error: "you need to sign in to continue"
+        })
+    }
     const courseId = req.courseId;
+    if (!courseId || courseId === undefined || courseId === null) {
+        return res.status(401).json({
+            error: "select a course and continue"
+        })
+    }
     try {
         const { newTitle, newDescription, newPrice, newImageUrl } = req.body;
         // input validation here 
@@ -150,7 +160,8 @@ adminVerifiedRouter.put('/course', async (req, res) => {
             title: newTitle,
             description: newDescription,
             price: newPrice,
-            imageUrl: newImageUrl
+            imageUrl: newImageUrl,
+            lastUpdated: Date.now,
         }, { new: true })
         res.status(200).json({
             message: "Course updated",
@@ -158,7 +169,7 @@ adminVerifiedRouter.put('/course', async (req, res) => {
         })
     } catch (err) {
         return res.status(500).json({
-            message: "error while editing course",
+            message: "error while updating course",
             error: err.message
         })
     }
@@ -166,6 +177,12 @@ adminVerifiedRouter.put('/course', async (req, res) => {
 
 
 adminVerifiedRouter.post('/logout', async (req, res) => {
+    const adminId = req.adminId;
+    if (!adminId || adminId === undefined || adminId === null) {
+        return res.status(401).json({
+            error: "you need to sign in to continue"
+        })
+    }
     try {
         res.clearCookie('admin_access');
         return res.status(200).json({
@@ -180,9 +197,14 @@ adminVerifiedRouter.post('/logout', async (req, res) => {
 })
 
 
+// all courses for this admin
 adminRouter.get('/course/bulk', async (req, res) => {
-    console.log("get-course/bulk route");
     const adminId = req.adminId;
+    if (!adminId || adminId === undefined || adminId === null) {
+        return res.status(401).json({
+            error: "you need to sign in to continue"
+        })
+    }
     try {
         const courses = await courseModel.find({
             creatorId: adminId

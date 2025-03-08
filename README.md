@@ -4,7 +4,3 @@ Currently developing the following -
 
 Future implementations - 
  - payments using razorpay
-
-
-
-

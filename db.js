@@ -68,10 +68,20 @@ const courseSchema = new Schema({
         type: Number,
         required: true
     },
-    imageUrl: String,
+    imageUrl: {
+        type: String
+    },
     creatorId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'admin'
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+    lastUpdated: {
+        type: Date,
+        default: Date.now,
     }
 })
 
@@ -87,7 +97,7 @@ const purchaseSchema = new Schema({
     },
     purchasedAt: {
         type: Date,
-        default: Date.now(),
+        default: Date.now,
     }
 })
 

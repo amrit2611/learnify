@@ -42,7 +42,7 @@ userRouter.post('/signup', async (req, res) => {
 
             const password = req.body.password;
             const hashedPassword = await bcrypt.hash(password, 11)
-            const newUser = await userModel.create({
+            await userModel.create({
                 email: email,
                 password: hashedPassword,
                 username: username
@@ -64,7 +64,7 @@ userRouter.post('/signin', async (req, res) => {
     const { email, password } = req.body
     if (!email || !password) {
         return res.status(400).json({
-            message: "both email and password are required to sign you in",
+            error: "both email and password are required to sign you in",
         })
     }
     try {
@@ -73,13 +73,13 @@ userRouter.post('/signin', async (req, res) => {
         })
         if (!user) {
             return res.status(403).json({
-                message: "you need to have an account to continue"
+                error: "you need to have an account to continue"
             })
         }
         const passwordMatched = bcrypt.compare(password, user.password);
         if (!passwordMatched) {
             return res.status(403).json({
-                message: "provide accurate credentials to continue"
+                message: "provide valid credentials to continue"
             });
         } else {
             const token = jwt.sign({
